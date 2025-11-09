@@ -259,5 +259,6 @@ This project is for educational purposes.
 - Express.js community
 
 ---
-
+## 🙏 command stripe
+stripe listen --forward-to localhost:8000/api/stripe-webhook
 **Note**: Remember to never commit your `.env` file or expose your Stripe secret keys!
