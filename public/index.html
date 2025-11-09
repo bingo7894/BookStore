@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Book Store</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;700&family=Inter:wght@400;500;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <style>
+        :root {
+            --primary-blue: #007BFF;
+            --primary-orange: #FF7A00;
+        }
+
+        body {
+            font-family: 'Prompt', 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .navbar-brand {
+            color: var(--primary-blue) !important;
+        }
+
+        .hero {
+            padding: 4rem 0;
+            background: linear-gradient(90deg, #007BFF, #FF7A00);
+        }
+
+        .btn-orange {
+            background-color: var(--primary-orange);
+            border-color: var(--primary-orange);
+            color: #fff;
+        }
+
+        .btn-orange:hover {
+            background-color: #e66a00;
+            border-color: #e66a00;
+            color: #fff;
+        }
+
+        .book-card {
+            border: 1px solid #dee2e6;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+
+        .book-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .book-card img {
+            height: 250px;
+            object-fit: cover;
+        }
+
+        .book-card .card-body {
+            padding-top: 0.5rem;
+        }
+
+        /* ✅ CSS ที่เพิ่มเข้ามา */
+        .book-card .old-price {
+            text-decoration: line-through;
+            color: #999;
+            font-size: 0.9rem;
+            margin-left: 8px;
+        }
+
+        .sale-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: var(--primary-orange);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .cart-popup {
+            position: fixed;
+            top: 0;
+            right: -450px;
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            background-color: #fff;
+            box-shadow: -3px 0 6px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease-in-out;
+            z-index: 1055;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .cart-popup.show {
+            right: 0;
+        }
+
+        .cart-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+        }
+
+        .cart-backdrop.show {
+            display: block;
+        }
+
+        #login-toast {
+            width: 380px;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.1);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+
+        .toast-body .text-orange {
+            color: var(--primary-orange);
+        }
+
+        .toast-progress {
+            height: 4px;
+            background-color: var(--primary-blue);
+            width: 100%;
+            animation: progress-bar-animation 3s linear forwards;
+        }
+
+        @keyframes progress-bar-animation {
+            from {
+                width: 100%;
+            }
+
+            to {
+                width: 0%;
+            }
+        }
+
+        #login-toast.show .toast-progress {
+            animation: none;
+        }
+
+        .tooltip-inner {
+            max-width: 300px;
+            padding: 12px;
+            background-color: #c7d9ea;
+            color: #0c0c0c;
+            border-radius: 8px;
+            font-family: 'Prompt', sans-serif;
+            text-align: left;
+            font-size: 0.9rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .tooltip-arrow::before {
+            border-top-color: #212529;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="bg-white sticky-top shadow-sm">
+        <nav class="navbar navbar-expand-lg">
+            <div class="container">
+                <a class="navbar-brand fw-bold fs-4" href="#">
+                    <i class="bi bi-book-half"></i> BookStore
+                </a>
+                <div class="mx-auto w-50">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="ค้นหาหนังสือ..." id="search-input">
+                        <span class="input-group-text" id="search-button" style="cursor: pointer;"><i class="bi bi-search"></i></span>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <button class="btn btn-light position-relative me-3" id="cart-button">
+                        <i class="bi bi-cart fs-5"></i>
+                        <span id="cart-count"
+                            class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                            style="display: none;">0</span>
+                    </button>
+                    <div id="auth-container">
+                        <a href="login.html" class="btn btn-light">
+                            <i class="bi bi-person-circle fs-5 me-2"></i>Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <section class="hero text-white text-center">
+        <div class="container">
+            <h1 class="display-5 fw-bold">ยินดีต้อนรับสู่ BookStore</h1>
+            <p class="lead">ค้นพบหนังสือดีดี มากมาย พร้อมส่งถึงมือคุณ</p>
+            <a href="#books-section" class="btn btn-orange btn-lg mt-3">Shop Now</a>
+        </div>
+    </section>
+    <main class="container my-5">
+        <section id="categories-section" class="mb-5">
+            <h2 class="mb-3">หมวดหมู่</h2>
+            <div id="category-buttons">
+            <div>
+                <button class="btn btn-primary">ทั้งหมด</button>
+                <button class="btn btn-outline-secondary">Technology</button>
+                <button class="btn btn-outline-secondary">Fiction</button>
+                <button class="btn btn-outline-secondary">Self-Help</button>
+                <button class="btn btn-outline-secondary">Finance</button>
+                <button class="btn btn-outline-secondary">Business</button>
+                <button class="btn btn-outline-secondary">Science</button>
+            </div>
+            </div>
+        </section>
+        <section id="books-section">
+            <h2 class="mb-3">หนังสือแนะนำ</h2>
+            <div id="book-list" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 g-4"></div>
+        </section>
+    </main>
+    <footer class="text-white text-center py-4 mt-5" style="background-color: #0056b3;">
+        <div class="container">
+            <p class="mb-0">&copy; 2025 Online Book Store. All rights reserved.</p>
+        </div>
+    </footer>
+    <div id="cart-backdrop" class="cart-backdrop"></div>
+    <div id="cart-popup" class="cart-popup">
+        <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light">
+            <h5 class="mb-0">ตะกร้าสินค้า</h5>
+            <button id="close-cart-button" class="btn-close"></button>
+        </div>
+        <div id="cart-items" class="p-3 flex-grow-1 overflow-auto">
+            <p class="text-center text-muted mt-4">ตะกร้าของคุณว่างเปล่า</p>
+        </div>
+        <div class="p-3 border-top bg-light">
+            <div class="d-flex justify-content-between fs-5 mb-3"><strong>ยอดรวม:</strong><strong
+                    id="cart-total">฿0.00</strong></div>
+            <a href="checkout.html" class="btn btn-primary w-100 btn-lg">Checkout</a>
+        </div>
+    </div>
+    <div class="position-fixed top-50 start-50 translate-middle p-3" style="z-index: 2000">
+        <div id="login-toast" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-body">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-circle-fill text-orange fs-2 me-3"></i>
+                    <div>
+                        <h6 class="mb-0 fw-bold">จำเป็นต้องเข้าสู่ระบบ</h6><span class="text-muted small">กรุณา login
+                            เพื่อดำเนินการต่อ...</span>
+                    </div>
+                    <button type="button" class="btn-close ms-auto align-self-start" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+            <div class="toast-progress"></div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="errorModal" tabindex="-1" aria-labelledby="errorModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="border-radius: 15px;">
+                <div class="modal-body text-center p-4">
+                    <i class="bi bi-x-circle-fill text-danger" style="font-size: 4rem;"></i>
+                    <h5 class="modal-title mt-3 mb-2" id="errorModalLabel"> Failed</h5>
+                    <p id="errorMessage" class="text-muted"></p>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        style="border-radius: 8px;">Ok</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Axios Interceptor (ตัวดักจับ Response)
+    axios.interceptors.response.use(
+        (response) => {
+            return response;  // ถ้าสำเร็จ (status 2xx)
+        },
+        async (error) => {
+            const originalRequest = error.config;
+            // ตรวจสอบว่าเป็น 401 (Unauthorized) และยังไม่ได้ลอง retry
+            if (error.response && error.response.status === 401 && !originalRequest._retry) {
+                originalRequest._retry = true;
+                try {
+                    // พยายามขอ Token ใหม่จาก /api/refresh
+                    await axios.post("/api/refresh", {}, { withCredentials: true });
+                    // ถ้าสำเร็จ ให้ยิง Request เดิมซ้ำ
+                    console.log("Token refreshed, retrying original request...");
+                    return axios(originalRequest);
+                } catch (refreshError) {
+                    console.error("Refresh token failed, logging out:", refreshError);
+                    alert("เซสชั่นหมดอายุ กรุณาเข้าสู่ระบบใหม่");
+                    window.location.href = '/login.html'; // ส่งไปหน้า login
+                    return Promise.reject(refreshError);
+                }
+            }
+            // ถ้าเป็น error อื่นที่ไม่ใช่ 401 หรือไม่มี error.response
+            return Promise.reject(error);
+        }
+    );
+
+        document.addEventListener("DOMContentLoaded", () => {
+            let cart = [];
+            const errorModal = new bootstrap.Modal(document.getElementById('errorModal'));
+
+            // --- ส่วน UI สำหรับการค้นหาและกรอง ---
+            const searchInput = document.getElementById('search-input');
+            const searchButton = document.getElementById('search-button');
+            const categoryButtonsContainer = document.getElementById('category-buttons');
+
+            async function fetchBooks(search = '', category = 'ทั้งหมด') {
+                try {
+                    const params = new URLSearchParams();
+                    if (search) {
+                        params.append('search', search);
+                    }
+                    if (category && category !== 'ทั้งหมด') {
+                        params.append('category', category);
+                    }
+                    
+                    const res = await axios.get(`/api/books?${params.toString()}`);
+                    return res.data.books || [];
+                } catch (err) {
+                    console.error("Error fetching books:", err);
+                    return [];
+                }
+            }
+
+            function showErrorModal(message) {
+                document.getElementById('errorMessage').textContent = message;
+                errorModal.show();
+            }
+
+            function renderBooks(books) {
+                const container = document.getElementById("book-list");
+                container.innerHTML = '';
+                if (books.length === 0) {
+                    container.innerHTML = '<div class="text-center text-muted w-100">ไม่พบหนังสือที่ตรงเงื่อนไข</div>';
+                    return;
+                }
+
+                books.forEach(book => {
+                    let priceHtml = `<p class="fw-bold mb-2">฿${parseFloat(book.book_price).toFixed(2)}</p>`;
+                    let saleBadgeHtml = '';
+                    const description = (book.description || 'ไม่มีคำอธิบาย').replace(/"/g, '&quot;');
+                    if (book.old_price && parseFloat(book.old_price) > parseFloat(book.book_price)) {
+                        const discountPercent = Math.round(((book.old_price - book.book_price) / book.old_price) * 100);
+                        priceHtml = `
+                        <div class="d-flex align-items-center">
+                            <p class="fw-bold mb-2 text-danger">฿${parseFloat(book.book_price).toFixed(2)}</p>
+                            <p class="mb-2 old-price">฿${parseFloat(book.old_price).toFixed(2)}</p>
+                        </div>
+                    `;
+                        saleBadgeHtml = `<div class="sale-badge">-${discountPercent}%</div>`;
+                    }
+
+                    const cardHtml = `
+                    <div class="col">
+                        
+                        <div class="card h-100 book-card" 
+                            data-bs-toggle="tooltip" 
+                            data-bs-placement="top"
+                            data-bs-title="${description}"
+                            data-bs-delay='{"show":500, "hide":100}'>
+                        ${saleBadgeHtml}
+                            <img src="${book.image_url}" class="card-img-top" alt="${book.book_name}">
+                            <div class="card-body d-flex flex-column p-3">
+                                <h6 class="card-title flex-grow-1">${book.book_name}</h6>
+                                <p class="card-text text-muted small">${book.author}</p>
+                                ${priceHtml}
+                                <button class="btn btn-sm btn-orange add-to-cart-btn" data-book-id="${book.book_id}">
+                                    <i class="bi bi-cart-plus"></i> เพิ่มลงตะกร้า
+                                </button>
+                            </div>
+                        </div>
+                    </div>`;
+                    container.insertAdjacentHTML('beforeend', cardHtml);
+                });
+                const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+                tooltipTriggerList.map(function (tooltipTriggerEl) {
+                    return new bootstrap.Tooltip(tooltipTriggerEl);
+                });
+            }
+
+            async function loadCart() {
+                try {
+                    const res = await axios.get("/api/cart", {
+                        withCredentials: true
+                    });
+                    cart = res.data;
+                    updateCartUI();
+                } catch (error) {
+                    console.log("Could not load cart, user might not be logged in.");
+                    cart = [];
+                    updateCartUI();
+                }
+            }
+
+            function updateCartUI() {
+                const cartItemsContainer = document.getElementById("cart-items");
+                const cartCount = document.getElementById("cart-count");
+                const cartTotal = document.getElementById("cart-total");
+                if (cart.length === 0) {
+                    cartItemsContainer.innerHTML = '<p class="text-center text-muted mt-4">ตะกร้าของคุณว่างเปล่า</p>';
+                    cartCount.style.display = 'none';
+                    cartTotal.textContent = "฿0.00";
+                    return;
+                }
+                cartCount.style.display = 'inline-block';
+                cartCount.textContent = cart.reduce((sum, item) => sum + item.cart_item_quantity, 0);
+                let html = '';
+                let total = 0;
+                cart.forEach(item => {
+                    const subtotal = item.book_price * item.cart_item_quantity;
+                    total += subtotal;
+                    const disableIncrease = item.cart_item_quantity >= item.stock ? 'disabled' : '';
+                    html += `
+            <div class="d-flex align-items-center mb-3">
+                <img src="${item.image_url}" alt="${item.book_name}" class="me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">${item.book_name}</h6>
+                    <p class="mb-0 fw-bold">฿${subtotal.toFixed(2)}</p>
+                    <div class="d-flex align-items-center mt-1">
+                        <button class="btn btn-sm btn-outline-secondary me-1 decrease-qty" data-id="${item.product_id}">−</button>
+                        <span class="px-2">${item.cart_item_quantity}</span>
+                        <button class="btn btn-sm btn-outline-secondary ms-1 increase-qty" data-id="${item.product_id}" >+</button>
+                    </div>
+                </div>
+                <button class="btn btn-sm btn-danger ms-2 remove-item" data-id="${item.product_id}">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>`;
+                });
+                cartItemsContainer.innerHTML = html;
+                cartTotal.textContent = `฿${total.toFixed(2)}`;
+                window.cart = cart;
+            }
+
+            async function checkAuthStatus() {
+                const authContainer = document.getElementById('auth-container');
+                try {
+                    const res = await axios.get("http://localhost:8000/api/user/auth", {
+                        withCredentials: true
+                    });
+                    const userdata = res.data;
+                    await loadCart();
+
+                    let adminButtonHtml = '';
+                    if (userdata.role === 'admin') {
+                        adminButtonHtml = `
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item fw-bold text-danger" href="overview.html">
+                                <i class="bi bi-shield-lock-fill me-2"></i>จัดการหลังร้าน
+                            </a>
+                        </li>`;
+                    }
+
+                    authContainer.innerHTML = `
+                    <div class="dropdown">
+                        <button class="btn btn-light dropdown-toggle d-flex align-items-center" type="button" id="userMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="https://static.vecteezy.com/system/resources/thumbnails/028/087/760/small_2x/user-avatar-icon-doodle-style-png.png"
+                            alt="User Avatar" class="img-fluid rounded-circle me-2" style="width: 28px; height: 28px; object-fit: cover;">
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userMenuButton">
+                            <li><h6 class="dropdown-header">${userdata.email}</h6></li>
+                            <li><a class="dropdown-item" href="userprofile.html"><i class="bi bi-person-gear me-2 text-primary"></i>Edit Profile</a></li>
+                            <li><a class="dropdown-item" href="order.html"><i class="bi bi-box-seam me-2 text-warning"></i>รายการสั่งซื้อ</a></li>
+                            ${adminButtonHtml}
+                            <li><hr class="dropdown-divider"></li>
+                            <li><button id="logout-btn" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Logout</button></li>
+                        </ul>
+                    </div>`;
+
+                    document.getElementById('logout-btn').addEventListener('click', async () => {
+                        await axios.post("http://localhost:8000/api/logout", {}, {
+                            withCredentials: true
+                        });
+                        location.reload();
+                    });
+                } catch (error) {
+                    console.log("User not logged in");
+                }
+            }
+            
+            async function handleFilterChange() {
+                const searchTerm = searchInput.value.trim();
+                const activeCategoryButton = categoryButtonsContainer.querySelector('.btn-primary');
+                const category = activeCategoryButton.textContent;
+                
+                // เรียก API ตามตัวกรอง
+                const books = await fetchBooks(searchTerm, category);
+                renderBooks(books);
+            }
+            // --- Cart Toggles ---
+                document.getElementById('cart-button').addEventListener('click', () => {
+                document.getElementById('cart-popup').classList.toggle('show');
+                document.getElementById('cart-backdrop').classList.toggle('show');
+            });
+            document.getElementById('close-cart-button').addEventListener('click', () => {
+                document.getElementById('cart-popup').classList.remove('show');
+                document.getElementById('cart-backdrop').classList.remove('show');
+            });
+            document.getElementById('cart-backdrop').addEventListener('click', () => {
+                document.getElementById('cart-popup').classList.remove('show');
+                document.getElementById('cart-backdrop').classList.remove('show');
+            });
+
+            // --- Add To Cart ---
+            document.getElementById('book-list').addEventListener('click', async (event) => {
+                const btn = event.target.closest('.add-to-cart-btn');
+                if (!btn) return;
+                const userLoggedIn = !!document.getElementById('userMenuButton');
+                if (!userLoggedIn) {
+                    const toastEl = document.getElementById('login-toast');
+                    const toastProgressBar = toastEl.querySelector('.toast-progress');
+                    const toast = new bootstrap.Toast(toastEl, {
+                        delay: 3000
+                    });
+                    toastProgressBar.style.animation = 'none';
+                    void toastProgressBar.offsetWidth;
+                    toastProgressBar.style.animation = 'progress-bar-animation 3s linear forwards';
+                    toast.show();
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 3000);
+                    return;
+                }
+
+                const bookId = parseInt(btn.dataset.bookId);
+                try {
+                    await axios.post('/api/cart', {
+                        product_id: bookId,
+                        quantity: 1
+                    }, {
+                        withCredentials: true
+                    });
+                    await loadCart();
+                } catch (error) {
+                    console.error("Failed to add item to cart:", error);
+                    showErrorModal(error.response?.data?.message || "Product is not enough");
+                }
+            });
+
+            // --- Cart Item Management ---
+            document.getElementById('cart-items').addEventListener('click', async (event) => {
+                const target = event.target;
+                const productId = parseInt(target.dataset.id || target.closest('button')?.dataset.id);
+                if (!productId) return;
+                const item = cart.find(i => i.product_id === productId);
+                if (!item) return;
+                try {
+                    if (target.classList.contains('increase-qty')) {
+                        if (item.cart_item_quantity >= item.stock) {
+                            showErrorModal(`Product "${item.book_name}" just have ${item.stock} in stock `);
+                            return;
+                        }
+                        await axios.put(`/api/cart/${productId}`, {
+                            quantity: item.cart_item_quantity + 1
+                        }, {
+                            withCredentials: true
+                        });
+
+                    } else if (target.classList.contains('decrease-qty')) {
+                        if (item.cart_item_quantity > 1) {
+                            await axios.put(`/api/cart/${productId}`, {
+                                quantity: item.cart_item_quantity - 1
+                            }, {
+                                withCredentials: true
+                            });
+                        } else {
+                            await axios.delete(`/api/cart/${productId}`, {
+                                withCredentials: true
+                            });
+                        }
+                    } else if (target.closest('.remove-item')) {
+                        await axios.delete(`/api/cart/${productId}`, {
+                            withCredentials: true
+                        });
+                    }
+                    await loadCart();
+                } catch (error) {
+                    console.error("Failed to update cart:", error);
+                    alert("เกิดข้อผิดพลาดในการอัปเดตตะกร้า");
+                }
+            });
+
+
+
+            searchButton.addEventListener('click', handleFilterChange);
+            searchInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    handleFilterChange();
+                }
+            });
+            categoryButtonsContainer.addEventListener('click', (event) => {
+                const target = event.target;
+                if (target.tagName === 'BUTTON') {
+                    if (target.classList.contains('btn-primary')) return;
+                    categoryButtonsContainer.querySelectorAll('button').forEach(btn => {
+                        btn.classList.remove('btn-primary');
+                        btn.classList.add('btn-outline-secondary');
+                    });
+                    target.classList.remove('btn-outline-secondary');
+                    target.classList.add('btn-primary');
+                    handleFilterChange();
+                }
+            });
+
+            async function main() {
+                await checkAuthStatus();
+                await handleFilterChange(); // เรียกใช้ handleFilterChange() เพื่อโหลดหนังสือในตอนเริ่มต้น
+            }
+
+            main();
+        });
+    </script>
+</body>
+
+</html>
